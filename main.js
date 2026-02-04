@@ -1,271 +1,287 @@
-let allProducts = [];
-let filteredProducts = [];
-let currentPage = 1;
-let itemsPerPage = 10;
+//HTTP request Get,post,put,delete
 
-async function LoadData() {
+// ============ POSTS FUNCTIONS ============
+
+async function Load() {
   try {
-    const response = await fetch("db.json");
-    allProducts = await response.json();
-    filteredProducts = [...allProducts];
-    renderProducts();
-  } catch (error) {
-    console.error("Error loading data:", error);
-  }
-}
+    let res = await fetch("http://localhost:3000/posts");
+    let data = await res.json();
+    let body = document.getElementById("table-body");
+    let showDeleted = document.getElementById("showDeleted")?.checked || false;
 
-function renderProducts() {
-  const tbody = document.querySelector(".table-id");
+    body.innerHTML = "";
 
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentProducts = filteredProducts.slice(startIndex, endIndex);
-
-  const rows = currentProducts
-    .map((item) => {
-      return `
-        <tr>
-          <td>${item.id}</td>
-          <td>${item.title}</td>
-          <td>$${item.price}</td>
-          <td>${item.category.name}</td>
-          <td>
-            <div class="img-container">
-              <img src="${item.images[0]}" alt="${item.title}" width="50" class="product-img">
-              <div class="img-description">${item.description}</div>
-            </div>
-          </td>
-          <td>
-            <button class="btn btn-sm btn-warning me-1" onclick="editProduct(${item.id})" data-bs-toggle="modal" data-bs-target="#productModal">
-              Sửa
-            </button>
-            <button class="btn btn-sm btn-danger" onclick="deleteProduct(${item.id})">
-              Xóa
-            </button>
-          </td>
-        </tr>
-      `;
-    })
-    .join("");
-
-  tbody.innerHTML = rows;
-  renderPagination(totalPages);
-}
-
-function renderPagination(totalPages) {
-  const pagination = document.getElementById("pagination");
-  if (!pagination) return;
-
-  let paginationHTML = "";
-
-  // Previous button
-  paginationHTML += `
-    <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
-      <a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;">Trước</a>
-    </li>
-  `;
-
-  // Page numbers
-  for (let i = 1; i <= totalPages; i++) {
-    if (
-      i === 1 ||
-      i === totalPages ||
-      (i >= currentPage - 2 && i <= currentPage + 2)
-    ) {
-      paginationHTML += `
-        <li class="page-item ${i === currentPage ? "active" : ""}">
-          <a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>
-        </li>
-      `;
-    } else if (i === currentPage - 3 || i === currentPage + 3) {
-      paginationHTML +=
-        '<li class="page-item disabled"><span class="page-link">...</span></li>';
+    for (const post of data) {
+      // Hiển thị tất cả posts nếu showDeleted = true, ngược lại chỉ hiển thị posts chưa xóa
+      if (showDeleted || !post.isDeleted) {
+        let rowClass = post.isDeleted ? "deleted" : "";
+        body.innerHTML += `
+          <tr class="${rowClass}">
+            <td>${post.id}</td>
+            <td>${post.title}</td>
+            <td>${post.views}</td>
+            <td>
+              <input value="Edit" type="submit" onclick="EditPost('${post.id}')" />
+              ${
+                post.isDeleted
+                  ? `<input value="Restore" type="submit" onclick="RestorePost('${post.id}')" />`
+                  : `<input value="Delete" type="submit" onclick="Delete('${post.id}')" />`
+              }
+            </td>
+          </tr>`;
+      }
     }
-  }
-
-  // Next button
-  paginationHTML += `
-    <li class="page-item ${currentPage === totalPages ? "disabled" : ""}">
-      <a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">Sau</a>
-    </li>
-  `;
-
-  pagination.innerHTML = paginationHTML;
-}
-
-function changePage(page) {
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  if (page >= 1 && page <= totalPages) {
-    currentPage = page;
-    renderProducts();
+  } catch (error) {
+    console.error("Error loading posts:", error);
   }
 }
 
-function changeItemsPerPage() {
-  itemsPerPage = parseInt(document.getElementById("itemsPerPage").value);
-  currentPage = 1;
-  renderProducts();
-}
+async function Save() {
+  let id = document.getElementById("id_txt").value.trim();
+  let title = document.getElementById("title_txt").value;
+  let views = parseInt(document.getElementById("views_txt").value) || 0;
 
-// Search function
-document.addEventListener("DOMContentLoaded", function () {
-  const searchInput = document.getElementById("searchInput");
-  if (searchInput) {
-    searchInput.addEventListener("input", function (e) {
-      const searchTerm = e.target.value.toLowerCase();
-      filteredProducts = allProducts.filter((product) =>
-        product.title.toLowerCase().includes(searchTerm),
-      );
-      currentPage = 1;
-      renderProducts();
-    });
-  }
-});
-document.addEventListener("DOMContentLoaded", function () {
-
-  // SEARCH
-  const searchInput = document.getElementById("searchInput");
-  if (searchInput) {
-    searchInput.addEventListener("input", function (e) {
-      const searchTerm = e.target.value.toLowerCase();
-      filteredProducts = allProducts.filter((product) =>
-        product.title.toLowerCase().includes(searchTerm)
-      );
-      currentPage = 1;
-      renderProducts();
-    });
+  if (!title) {
+    alert("Vui lòng nhập title!");
+    return;
   }
 
-  // SORT ✅
-  const sortSelect = document.getElementById("sortSelect");
-  if (sortSelect) {
-    sortSelect.addEventListener("change", handleSort);
-  }
-
-  // ITEMS PER PAGE ✅
-  const itemsSelect = document.getElementById("itemsPerPage");
-  if (itemsSelect) {
-    itemsSelect.addEventListener("change", changeItemsPerPage);
-  }
-});
-
-
-// Sort handler
-function handleSort() {
-  const sortValue = document.getElementById("sortSelect").value;
-  if (!sortValue) return;
-
-  const [type, order] = sortValue.split("-");
-
-  if (type === "name") {
-    filteredProducts.sort((a, b) => {
-      if (order === "asc") {
-        return a.title.localeCompare(b.title);
-      } else {
-        return b.title.localeCompare(a.title);
-      }
-    });
-  } else if (type === "price") {
-    filteredProducts.sort((a, b) => {
-      if (order === "asc") {
-        return a.price - b.price;
-      } else {
-        return b.price - a.price;
-      }
-    });
-  }
-
-  currentPage = 1;
-  renderProducts();
-}
-
-// Add product
-function openAddModal() {
-  document.getElementById("modalTitle").textContent = "Thêm Sản Phẩm";
-  document.getElementById("productForm").reset();
-  document.getElementById("productId").value = "";
-}
-
-// Edit product
-function editProduct(id) {
-  const product = allProducts.find((p) => p.id === id);
-  if (product) {
-    document.getElementById("modalTitle").textContent = "Sửa Sản Phẩm";
-    document.getElementById("productId").value = product.id;
-    document.getElementById("productTitle").value = product.title;
-    document.getElementById("productPrice").value = product.price;
-    document.getElementById("productDescription").value = product.description;
-    document.getElementById("productCategory").value = product.category.name;
-    document.getElementById("productImage").value = product.images[0];
-  }
-}
-
-// Save product
-function saveProduct() {
-  const id = document.getElementById("productId").value;
-  const title = document.getElementById("productTitle").value;
-  const price = parseFloat(document.getElementById("productPrice").value);
-  const description = document.getElementById("productDescription").value;
-  const categoryName = document.getElementById("productCategory").value;
-  const imageUrl = document.getElementById("productImage").value;
+  let res;
 
   if (id) {
-    // Edit existing product
-    const index = allProducts.findIndex((p) => p.id === parseInt(id));
-    if (index !== -1) {
-      allProducts[index].title = title;
-      allProducts[index].price = price;
-      allProducts[index].description = description;
-      allProducts[index].category.name = categoryName;
-      allProducts[index].images[0] = imageUrl;
+    // Update existing post
+    let getPost = await fetch("http://localhost:3000/posts/" + id);
+    if (getPost.ok) {
+      let existingPost = await getPost.json();
+      res = await fetch("http://localhost:3000/posts/" + id, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...existingPost,
+          title: title,
+          views: views,
+        }),
+      });
     }
   } else {
-    // Add new product
-    const newProduct = {
-      id: Math.max(...allProducts.map((p) => p.id)) + 1,
-      title: title,
-      slug: title.toLowerCase().replace(/\s+/g, "-"),
-      price: price,
-      description: description,
-      category: {
-        id: 1,
-        name: categoryName,
-        slug: categoryName.toLowerCase().replace(/\s+/g, "-"),
-      },
-      images: [imageUrl],
-      creationAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    allProducts.push(newProduct);
-  }
+    // Create new post with auto-increment ID
+    let allPosts = await fetch("http://localhost:3000/posts");
+    let posts = await allPosts.json();
 
-  filteredProducts = [...allProducts];
-  currentPage = 1;
-  renderProducts();
-
-  // Close modal
-  const modal = bootstrap.Modal.getInstance(
-    document.getElementById("productModal"),
-  );
-  modal.hide();
-}
-
-// Delete product
-function deleteProduct(id) {
-  if (confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
-    allProducts = allProducts.filter((p) => p.id !== id);
-    filteredProducts = [...allProducts];
-
-    // Adjust current page if needed
-    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-    if (currentPage > totalPages && totalPages > 0) {
-      currentPage = totalPages;
+    // Tìm maxId
+    let maxId = 0;
+    for (const post of posts) {
+      let postId = parseInt(post.id);
+      if (postId > maxId) {
+        maxId = postId;
+      }
     }
 
-    renderProducts();
+    let newId = (maxId + 1).toString();
+
+    res = await fetch("http://localhost:3000/posts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: newId,
+        title: title,
+        views: views,
+        isDeleted: false,
+      }),
+    });
+  }
+
+  if (res.ok) {
+    console.log("Lưu thành công");
+    ClearPostForm();
+    Load();
   }
 }
 
-LoadData();
+async function Delete(id) {
+  if (!confirm("Bạn có chắc muốn xóa post này?")) return;
+
+  // Soft delete - cập nhật isDeleted = true
+  let getPost = await fetch("http://localhost:3000/posts/" + id);
+  if (getPost.ok) {
+    let post = await getPost.json();
+    let res = await fetch("http://localhost:3000/posts/" + id, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...post,
+        isDeleted: true,
+      }),
+    });
+
+    if (res.ok) {
+      console.log("Xóa mềm thành công");
+      Load();
+    }
+  }
+}
+
+async function RestorePost(id) {
+  let getPost = await fetch("http://localhost:3000/posts/" + id);
+  if (getPost.ok) {
+    let post = await getPost.json();
+    let res = await fetch("http://localhost:3000/posts/" + id, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...post,
+        isDeleted: false,
+      }),
+    });
+
+    if (res.ok) {
+      console.log("Khôi phục thành công");
+      Load();
+    }
+  }
+}
+
+async function EditPost(id) {
+  let res = await fetch("http://localhost:3000/posts/" + id);
+  if (res.ok) {
+    let post = await res.json();
+    document.getElementById("id_txt").value = post.id;
+    document.getElementById("title_txt").value = post.title;
+    document.getElementById("views_txt").value = post.views;
+  }
+}
+
+function ClearPostForm() {
+  document.getElementById("id_txt").value = "";
+  document.getElementById("title_txt").value = "";
+  document.getElementById("views_txt").value = "";
+}
+
+// ============ COMMENTS FUNCTIONS ============
+
+async function LoadComments() {
+  try {
+    let res = await fetch("http://localhost:3000/comments");
+    let data = await res.json();
+    let body = document.getElementById("comments-body");
+
+    body.innerHTML = "";
+
+    for (const comment of data) {
+      body.innerHTML += `
+        <tr>
+          <td>${comment.id}</td>
+          <td>${comment.text}</td>
+          <td>${comment.postId}</td>
+          <td>
+            <input value="Edit" type="submit" onclick="EditComment('${comment.id}')" />
+            <input value="Delete" type="submit" onclick="DeleteComment('${comment.id}')" />
+          </td>
+        </tr>`;
+    }
+  } catch (error) {
+    console.error("Error loading comments:", error);
+  }
+}
+
+async function SaveComment() {
+  let id = document.getElementById("comment_id_txt").value.trim();
+  let text = document.getElementById("comment_text_txt").value;
+  let postId = document.getElementById("comment_postId_txt").value;
+
+  if (!text || !postId) {
+    alert("Vui lòng nhập đầy đủ thông tin!");
+    return;
+  }
+
+  let res;
+
+  if (id) {
+    // Update existing comment
+    res = await fetch("http://localhost:3000/comments/" + id, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: id,
+        text: text,
+        postId: postId,
+      }),
+    });
+  } else {
+    // Create new comment with auto-increment ID
+    let allComments = await fetch("http://localhost:3000/comments");
+    let comments = await allComments.json();
+
+    // Tìm maxId
+    let maxId = 0;
+    for (const comment of comments) {
+      let commentId = parseInt(comment.id);
+      if (commentId > maxId) {
+        maxId = commentId;
+      }
+    }
+
+    let newId = (maxId + 1).toString();
+
+    res = await fetch("http://localhost:3000/comments", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: newId,
+        text: text,
+        postId: postId,
+      }),
+    });
+  }
+
+  if (res.ok) {
+    console.log("Lưu comment thành công");
+    ClearCommentForm();
+    LoadComments();
+  }
+}
+
+async function EditComment(id) {
+  let res = await fetch("http://localhost:3000/comments/" + id);
+  if (res.ok) {
+    let comment = await res.json();
+    document.getElementById("comment_id_txt").value = comment.id;
+    document.getElementById("comment_text_txt").value = comment.text;
+    document.getElementById("comment_postId_txt").value = comment.postId;
+  }
+}
+
+async function DeleteComment(id) {
+  if (!confirm("Bạn có chắc muốn xóa comment này?")) return;
+
+  let res = await fetch("http://localhost:3000/comments/" + id, {
+    method: "DELETE",
+  });
+
+  if (res.ok) {
+    console.log("Xóa comment thành công");
+    LoadComments();
+  }
+}
+
+function ClearCommentForm() {
+  document.getElementById("comment_id_txt").value = "";
+  document.getElementById("comment_text_txt").value = "";
+  document.getElementById("comment_postId_txt").value = "";
+}
+
+// Load initial data
+Load();
+LoadComments();

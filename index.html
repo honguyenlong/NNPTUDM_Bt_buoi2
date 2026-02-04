@@ -1,204 +1,116 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Product Management</title>
-
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="./favicon.ico" />
-
-    <!-- Bootstrap CSS -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-
+    <title>Document</title>
     <style>
-      .product-img {
+      .deleted {
+        text-decoration: line-through;
+        color: #999;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-bottom: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      input[type="text"],
+      input[type="number"] {
+        padding: 5px;
+        margin: 5px;
+      }
+      input[type="submit"] {
+        padding: 5px 15px;
         cursor: pointer;
-        transition: transform 0.2s;
-        max-width: 80px;
       }
-      .product-img:hover {
-        transform: scale(1.1);
+      .section {
+        margin-bottom: 30px;
+        border: 1px solid #ccc;
+        padding: 15px;
       }
-      .img-container {
-        position: relative;
-        display: inline-block;
-      }
-      .img-description {
-        display: none;
-        position: absolute;
-        background: rgba(0, 0, 0, 0.9);
-        color: white;
-        padding: 10px;
-        border-radius: 5px;
-        z-index: 1000;
-        max-width: 300px;
-        font-size: 12px;
-        bottom: 60px;
-        left: 0;
-      }
-      .img-container:hover .img-description {
-        display: block;
+      h2 {
+        margin-top: 0;
       }
     </style>
+    <script defer src="main.js"></script>
   </head>
+
   <body>
-    <div class="container mt-5">
-      <h1 class="text-center mb-4">Quản Lý Sản Phẩm</h1>
-
-      <!-- Search and Sort Controls -->
-      <div class="row mb-4">
-        <div class="col-md-6">
-          <input
-            type="text"
-            id="searchInput"
-            class="form-control"
-            placeholder="Tìm kiếm theo tên..."
-          />
-        </div>
-        <div class="col-md-4">
-          <select class="form-select" id="sortSelect">
-            <option value="">-- Chọn sắp xếp --</option>
-            <option value="name-asc">Tên (A → Z)</option>
-            <option value="name-desc">Tên (Z → A)</option>
-            <option value="price-asc">Giá (Thấp → Cao)</option>
-            <option value="price-desc">Giá (Cao → Thấp)</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <select class="form-select" id="itemsPerPage">
-            <option value="5">5 / trang</option>
-            <option value="10" selected>10 / trang</option>
-            <option value="20">20 / trang</option>
-            <option value="50">50 / trang</option>
-          </select>
-        </div>
+    <div class="section">
+      <h2>Posts</h2>
+      <div>
+        <label>
+          <input type="checkbox" id="showDeleted" onchange="Load()" />
+          Hiển thị posts đã xóa
+        </label>
       </div>
-
-      <!-- Add Product Button -->
-      <div class="mb-3">
-        <button
-          class="btn btn-success"
-          data-bs-toggle="modal"
-          data-bs-target="#productModal"
-          onclick="openAddModal()"
-        >
-          + Thêm Sản Phẩm
-        </button>
-      </div>
-
-      <!-- Products Table -->
-      <div class="table-responsive">
-        <table class="table table-striped table-hover">
-          <thead class="table-dark">
+      <div>
+        <table>
+          <thead>
             <tr>
               <th>ID</th>
               <th>Title</th>
-              <th>Price</th>
-              <th>Category</th>
-              <th>Images</th>
+              <th>Views</th>
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody class="table-id"></tbody>
+          <tbody id="table-body"></tbody>
         </table>
       </div>
-
-      <!-- Pagination -->
-      <nav>
-        <ul class="pagination justify-content-center" id="pagination"></ul>
-      </nav>
-    </div>
-
-    <!-- Product Modal -->
-    <div class="modal fade" id="productModal" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="modalTitle">Thêm Sản Phẩm</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-            ></button>
-          </div>
-          <div class="modal-body">
-            <form id="productForm">
-              <input type="hidden" id="productId" />
-              <div class="mb-3">
-                <label class="form-label">Title</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="productTitle"
-                  required
-                />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Price</label>
-                <input
-                  type="number"
-                  class="form-control"
-                  id="productPrice"
-                  required
-                />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Description</label>
-                <textarea
-                  class="form-control"
-                  id="productDescription"
-                  rows="3"
-                  required
-                ></textarea>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Category Name</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="productCategory"
-                  required
-                />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Image URL</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="productImage"
-                  required
-                />
-              </div>
-            </form>
-          </div>
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              data-bs-dismiss="modal"
-            >
-              Đóng
-            </button>
-            <button
-              type="button"
-              class="btn btn-primary"
-              onclick="saveProduct()"
-            >
-              Lưu
-            </button>
-          </div>
-        </div>
+      <div>
+        <input
+          type="text"
+          placeholder="ID (để trống khi tạo mới)"
+          id="id_txt"
+          readonly
+        />
+        <input type="text" placeholder="Title" id="title_txt" />
+        <input type="number" placeholder="Views" id="views_txt" />
+        <input type="submit" value="Save Post" onclick="Save()" />
+        <input type="button" value="Clear" onclick="ClearPostForm()" />
       </div>
     </div>
 
-    <!-- Bootstrap JS + Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Custom JS -->
-    <script src="./main.js"></script>
+    <div class="section">
+      <h2>Comments</h2>
+      <div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Comment</th>
+              <th>Post ID</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="comments-body"></tbody>
+        </table>
+      </div>
+      <div>
+        <input
+          type="text"
+          placeholder="ID (để trống khi tạo mới)"
+          id="comment_id_txt"
+          readonly
+        />
+        <input type="text" placeholder="Comment text" id="comment_text_txt" />
+        <input type="text" placeholder="Post ID" id="comment_postId_txt" />
+        <input type="submit" value="Save Comment" onclick="SaveComment()" />
+        <input type="button" value="Clear" onclick="ClearCommentForm()" />
+      </div>
+    </div>
   </body>
 </html>
